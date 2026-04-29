@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>旅行手帐生成器 V11</title>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Noto+Serif+SC:wght@400;700&family=ZCOOL+QingKe+HuangYou&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Noto+Serif+SC:wght@400;700&family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 :root{
@@ -106,7 +106,7 @@ body{display:flex;height:100vh;background:#191410;
 
 /* ── SVG连线层 ── */
 #asvg{position:absolute;top:0;left:0;width:100%;height:100%;
-  pointer-events:none;z-index:2;overflow:visible;}
+  pointer-events:none;z-index:6;overflow:visible;}
 
 /* ── 标题 ── */
 .tz{position:relative;z-index:3;text-align:center;padding:52px 30px 14px;}
@@ -166,15 +166,16 @@ body{display:flex;height:100vh;background:#191410;
   );}
 
 /* ── 文案节点 ── */
+/* 景点名称：独立节点，贴近主图 */
+.name-node{}
 .text-node{}
 
-/* 景点名称：Noto Serif SC，中英文通用，有分量感 */
+/* 景点名称：Noto Serif SC Bold，有分量感，中英文通用 */
 .ns{display:inline-block;padding:6px 15px 7px;
-  font-family:'Noto Serif SC',"STSong","SimSun",Georgia,serif;
+  font-family:'Noto Serif SC',"STSong",Georgia,serif;
   font-size:17px;font-weight:700;color:var(--ink);
   line-height:1.3;margin-bottom:6px;max-width:100%;word-break:break-all;}
 .ns.hidden{display:none!important;}
-/* 时间行：轻量，Noto Serif SC 400 */
 .ns .tl{display:block;font-size:11px;color:var(--ink2);
   font-weight:400;margin-bottom:2px;letter-spacing:.5px;
   font-family:'Noto Serif SC',Georgia,serif;}
@@ -202,12 +203,12 @@ body{display:flex;height:100vh;background:#191410;
   2.5% 92%,1% 100%,0% 90%
 );}
 
-/* 感想文案：楷体，温润有文气 */
+/* 感想文案：霞鹜文楷 TC，温润手写感 */
 .dtxt{
-  font-family:"Kaiti SC","STKaiti","KaiTi","华文楷体",Georgia,serif;
+  font-family:'LXGW WenKai TC','LXGW Marker Gothic',"STKaiti",cursive;
   font-size:14px;
   color:#7a6e64;
-  line-height:1.75;
+  line-height:1.8;
   margin-top:2px;padding:0 2px;
   word-break:break-all;
   font-weight:400;
@@ -405,7 +406,10 @@ body{display:flex;height:100vh;background:#191410;
 .rot-handle::after{content:'↻';}
 .drag-node:hover .rot-handle{opacity:1;}
 
-/* 导出遮罩 */
+/* SVG锚点样式（通过SVG inline style控制） */
+.anchor-circle{ cursor:crosshair; }
+/* 导出时隐藏锚点 */
+.anchor-hide{ display:none; }
 .ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
   z-index:9999;align-items:center;justify-content:center;
   flex-direction:column;color:#e0ceaa;font-size:14px;
@@ -653,18 +657,18 @@ function addLoc(){
   const rot=photoRot[(locN-1)%photoRot.length];
   const tc=tapeCols[ti];
 
-  // 照片节点初始位置（适配650px宽度）
+  // 照片节点初始位置
   const photoLeft = isL ? 28 : CW - pw - 28;
   const photoTop  = 175 + (locN-1)*210;
 
-  // 文案节点：照片宽225，文案宽200，左右对应
-  const textW = 250;  // 加宽，给感想文案更多横向空间
+  // 文案节点：景点名+感想文案合并，紧贴主图
+  const textW = 250;
   const textLeft = isL
     ? photoLeft + pw + 16
     : photoLeft - textW - 16;
   const textTop = photoTop + 10;
 
-  // 胶带：斜条纹（CSS已改），只需传颜色
+  // 胶带
   const tapeHtml=`
     <div class="tape" style="background-color:${tc};width:52px;top:-9px;
       ${isL?'left:16px':'right:16px'};
@@ -684,15 +688,19 @@ function addLoc(){
     </div>
   </div>`;
 
-  // ── 文案节点HTML ──
+  // ── 文案节点HTML：名称+感想合并，偶数节点名称纸条右对齐 ──
   const clampedLeft = Math.max(22, Math.min(textLeft, CW - textW - 22));
+  // 偶数节点（图在右）：名称纸条靠右对齐，视觉上贴近右侧图片
+  const nsAlign = isL ? 'text-align:left;' : 'text-align:right;display:flex;flex-direction:column;align-items:flex-end;';
   const textHtml=`
   <div class="drag-node text-node" id="tx${id}"
        style="top:${textTop}px;left:${clampedLeft}px;width:${textW}px;">
-    <div class="ns torn ${stripCls[si]} hidden" id="ns${id}"
-         style="transform:rotate(${-rot*0.3}deg);">
-      <span class="tl hidden" id="tl${id}"></span>
-      <span id="nn${id}"></span>
+    <div style="${nsAlign}">
+      <div class="ns torn ${stripCls[si]} hidden" id="ns${id}"
+           style="transform:rotate(${-rot*0.3}deg);display:inline-block;">
+        <span class="tl hidden" id="tl${id}"></span>
+        <span id="nn${id}"></span>
+      </div>
     </div>
     <div class="dtxt hidden" id="dt${id}"></div>
   </div>`;
@@ -923,58 +931,241 @@ function makeFooterDrag(el){
   el.addEventListener('touchstart',dn,{passive:false});
 }
 
-// ═══ 连线：三次贝塞尔，舒缓自然弧线 ═══
+// ═══ 连线锚点存储 ═══
+// arrowAnchors[pairKey] = {x1,y1,x2,y2} 画布坐标，null表示用默认
+const arrowAnchors={};
+
+function getDefaultAnchors(ph1, ph2, cr){
+  const r1=ph1.getBoundingClientRect();
+  const r2=ph2.getBoundingClientRect();
+  const cx1=r1.left+r1.width/2-cr.left;
+  const cy1=r1.top+r1.height/2-cr.top;
+  const cx2=r2.left+r2.width/2-cr.left;
+  const cy2=r2.top+r2.height/2-cr.top;
+  const dx=cx2-cx1, dy=cy2-cy1;
+  let x1,y1,x2,y2;
+  if(Math.abs(dy)>=Math.abs(dx)*0.5){
+    // 纵向为主：底部→顶部
+    x1=r1.left+r1.width*0.5-cr.left;
+    y1=r1.bottom-cr.top+4;
+    x2=r2.left+r2.width*0.5-cr.left;
+    y2=r2.top-cr.top-4;
+  } else {
+    // 横向为主：侧边→侧边
+    if(dx>0){
+      x1=r1.right-cr.left+4; y1=cy1-cr.top+r1.height*0.25;
+      x2=r2.left-cr.left-4;  y2=cy2-cr.top-r2.height*0.25;
+    } else {
+      x1=r1.left-cr.left-4;  y1=cy1-cr.top+r1.height*0.25;
+      x2=r2.right-cr.left+4; y2=cy2-cr.top-r2.height*0.25;
+    }
+  }
+  return {x1,y1,x2,y2};
+}
+
 function updateArrows(){
   const svg=document.getElementById('asvg');
-  [...svg.children].forEach(c=>{ if(c.tagName!=='defs')c.remove(); });
+  [...svg.children].forEach(c=>{ if(c.tagName!=='defs') c.remove(); });
 
-  if(locIds.length<2)return;
+  if(locIds.length<2) return;
   const cr=document.getElementById('canvas').getBoundingClientRect();
+  svg.style.pointerEvents='none';
 
   for(let i=0;i<locIds.length-1;i++){
-    const id1=locIds[i];
-    const id2=locIds[i+1];
-
-    // 从照片节点底部出发，到下一照片节点顶部
+    const id1=locIds[i], id2=locIds[i+1];
+    const pairKey=id1+'_'+id2;
     const ph1=document.getElementById('ph'+id1);
     const ph2=document.getElementById('ph'+id2);
-    if(!ph1||!ph2)continue;
+    if(!ph1||!ph2) continue;
 
-    const r1=ph1.getBoundingClientRect();
-    const r2=ph2.getBoundingClientRect();
+    // ── 关键修复：照片未上传时跳过这段连线 ──
+    const img1=document.getElementById('img'+id1);
+    const img2=document.getElementById('img'+id2);
+    const pol1=document.getElementById('pol'+id1);
+    const pol2=document.getElementById('pol'+id2);
+    const hasPhoto1 = pol1&&pol1.style.display!=='none'&&img1&&img1.src&&img1.src!==window.location.href;
+    const hasPhoto2 = pol2&&pol2.style.display!=='none'&&img2&&img2.src&&img2.src!==window.location.href;
+    if(!hasPhoto1||!hasPhoto2){
+      // 至少一端没有照片，跳过，不画线
+      delete arrowAnchors[pairKey]; // 清除缓存，等上传后重新计算默认位置
+      continue;
+    }
 
-    const x1=r1.left+r1.width*0.5-cr.left;
-    const y1=r1.bottom-cr.top+6;
-    const x2=r2.left+r2.width*0.5-cr.left;
-    const y2=r2.top-cr.top-6;
+    const def=getDefaultAnchors(ph1,ph2,cr);
 
-    // 三次贝塞尔控制点：
-    // cp1在起点下方+横向偏移，cp2在终点上方+反向偏移
-    // 奇偶交替，制造S形/侧弯自然感
-    const dy=y2-y1;
-    const sideA=(i%2===0)?+55:-55; // 奇右偶左
-    const sideB=(i%2===0)?-40:+40;
+    // ── 初始化或重置时使用默认值，且把坐标限制在画布范围内 ──
+    if(!arrowAnchors[pairKey]){
+      arrowAnchors[pairKey]={x1:def.x1,y1:def.y1,x2:def.x2,y2:def.y2};
+    }
+    const a=arrowAnchors[pairKey];
 
-    const cp1x=x1+sideA;
-    const cp1y=y1+dy*0.35;
-    const cp2x=x2+sideB;
-    const cp2y=y2-dy*0.35;
+    // 贝塞尔控制点
+    const mx=(a.x1+a.x2)/2, my=(a.y1+a.y2)/2;
+    const dist=Math.sqrt((a.x2-a.x1)**2+(a.y2-a.y1)**2)||1;
+    const bend=Math.min(dist*0.22, 36);
+    const nx=-(a.y2-a.y1)/dist;
+    const ny=(a.x2-a.x1)/dist;
+    const side=(i%2===0)?1:-1;
+    const cpx=mx+nx*bend*side;
+    const cpy=my+ny*bend*side;
 
-    const d=`M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`;
-
+    // 虚线路径
+    const d=`M ${a.x1} ${a.y1} Q ${cpx} ${cpy} ${a.x2} ${a.y2}`;
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('d',d);
     path.setAttribute('fill','none');
     path.setAttribute('stroke','#8a7060');
     path.setAttribute('stroke-width','1.6');
-    path.setAttribute('stroke-dasharray','5.5 4.5');
+    path.setAttribute('stroke-dasharray','5 4');
     path.setAttribute('stroke-linecap','round');
-    path.setAttribute('opacity','.7');
+    path.setAttribute('opacity','.72');
     path.setAttribute('filter','url(#rf)');
     path.setAttribute('marker-end','url(#ah)');
     svg.appendChild(path);
+
+    // 起点锚 + 终点锚
+    addAnchorCircle(svg, a.x1, a.y1, pairKey, 'start', cr);
+    addAnchorCircle(svg, a.x2, a.y2, pairKey, 'end',   cr);
+
+    // ── 重置按钮：在连线中点附近，点击恢复默认位置 ──
+    const resetX=(a.x1+a.x2)/2+16;
+    const resetY=(a.y1+a.y2)/2-16;
+    const rg=document.createElementNS('http://www.w3.org/2000/svg','g');
+    rg.classList.add('anchor-group');
+    rg.style.pointerEvents='all';
+    rg.style.cursor='pointer';
+    rg.setAttribute('title','恢复默认连线');
+
+    const rbg=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    rbg.setAttribute('cx',resetX); rbg.setAttribute('cy',resetY); rbg.setAttribute('r',9);
+    rbg.setAttribute('fill','#f5ede0'); rbg.setAttribute('stroke','rgba(154,128,96,.3)');
+    rbg.setAttribute('stroke-width','1'); rbg.setAttribute('opacity','0.55');
+    rg.appendChild(rbg);
+
+    const rtxt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    rtxt.setAttribute('x',resetX); rtxt.setAttribute('y',resetY+4);
+    rtxt.setAttribute('text-anchor','middle');
+    rtxt.setAttribute('font-size','10');
+    rtxt.setAttribute('fill','rgba(120,96,72,.65)');
+    rtxt.textContent='↺';
+    rg.appendChild(rtxt);
+
+    // 悬停高亮
+    rg.addEventListener('mouseenter',()=>{
+      rbg.setAttribute('opacity','1');
+      rbg.setAttribute('stroke','rgba(154,128,96,.8)');
+    });
+    rg.addEventListener('mouseleave',()=>{
+      rbg.setAttribute('opacity','0.55');
+      rbg.setAttribute('stroke','rgba(154,128,96,.3)');
+    });
+
+    // 点击重置
+    const capturedKey=pairKey;
+    const capturedDef=def;
+    rg.addEventListener('click', e=>{
+      e.stopPropagation();
+      arrowAnchors[capturedKey]={
+        x1:capturedDef.x1, y1:capturedDef.y1,
+        x2:capturedDef.x2, y2:capturedDef.y2
+      };
+      updateArrows();
+    });
+
+    svg.appendChild(rg);
   }
 }
+
+function addAnchorCircle(svg, cx, cy, pairKey, which, cr){
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.classList.add('anchor-group');
+  g.style.pointerEvents='all'; // 只有锚点组响应事件
+  g.style.cursor='crosshair';
+
+  // 透明大区域方便点击
+  const hit=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  hit.setAttribute('cx',cx); hit.setAttribute('cy',cy); hit.setAttribute('r',14);
+  hit.setAttribute('fill','transparent');
+  g.appendChild(hit);
+
+  // 可见小圆点
+  const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',5);
+  c.setAttribute('fill','#f5ede0');
+  c.setAttribute('stroke','rgba(154,128,96,.38)');
+  c.setAttribute('stroke-width','1.5');
+  c.setAttribute('opacity','0.6');
+  c.classList.add('anchor-circle');
+  g.appendChild(c);
+
+  // 悬停效果
+  g.addEventListener('mouseenter',()=>{
+    c.setAttribute('opacity','1');
+    c.setAttribute('stroke','rgba(154,128,96,.85)');
+    c.setAttribute('fill','#e8d8c0');
+  });
+  g.addEventListener('mouseleave',()=>{
+    c.setAttribute('opacity','0.6');
+    c.setAttribute('stroke','rgba(154,128,96,.38)');
+    c.setAttribute('fill','#f5ede0');
+  });
+
+  // 拖拽
+  g.addEventListener('mousedown', e=>{
+    e.preventDefault(); e.stopPropagation();
+    const startX=e.clientX, startY=e.clientY;
+    const origX=arrowAnchors[pairKey][which==='start'?'x1':'x2'];
+    const origY=arrowAnchors[pairKey][which==='start'?'y1':'y2'];
+
+    const mv=ev=>{
+      const dx=ev.clientX-startX, dy=ev.clientY-startY;
+      const newX=origX+dx, newY=origY+dy;
+      if(which==='start'){
+        arrowAnchors[pairKey].x1=newX;
+        arrowAnchors[pairKey].y1=newY;
+      } else {
+        arrowAnchors[pairKey].x2=newX;
+        arrowAnchors[pairKey].y2=newY;
+      }
+      updateArrows();
+    };
+    const up=()=>{
+      document.removeEventListener('mousemove',mv);
+      document.removeEventListener('mouseup',up);
+    };
+    document.addEventListener('mousemove',mv);
+    document.addEventListener('mouseup',up);
+  });
+
+  // 触摸支持
+  g.addEventListener('touchstart', e=>{
+    e.preventDefault(); e.stopPropagation();
+    const t0=e.touches[0];
+    const startX=t0.clientX, startY=t0.clientY;
+    const origX=arrowAnchors[pairKey][which==='start'?'x1':'x2'];
+    const origY=arrowAnchors[pairKey][which==='start'?'y1':'y2'];
+    const mv=ev=>{
+      const t=ev.touches[0];
+      const newX=origX+(t.clientX-startX);
+      const newY=origY+(t.clientY-startY);
+      if(which==='start'){
+        arrowAnchors[pairKey].x1=newX; arrowAnchors[pairKey].y1=newY;
+      } else {
+        arrowAnchors[pairKey].x2=newX; arrowAnchors[pairKey].y2=newY;
+      }
+      updateArrows();
+    };
+    const up=()=>{
+      document.removeEventListener('touchmove',mv);
+      document.removeEventListener('touchend',up);
+    };
+    document.addEventListener('touchmove',mv,{passive:false});
+    document.addEventListener('touchend',up);
+  },{passive:false});
+
+  svg.appendChild(g);
+}
+
 
 // ═══ Emoji分类数据 ═══
 const EMOJI_CATS = {
@@ -1219,6 +1410,8 @@ function doExport(){
       onclone(doc){
         const cc=doc.getElementById('canvas');
         if(cc)cc.style.minHeight=el.scrollHeight+'px';
+        // 隐藏锚点
+        doc.querySelectorAll('.anchor-group').forEach(g=>g.style.display='none');
       }
     }).then(c=>{
       const a=document.createElement('a');
